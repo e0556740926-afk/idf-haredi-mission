@@ -1,0 +1,21 @@
+:root {
+  --canvas: #eef1f6;
+  --bg: #f7f9fc;
+  --ink: #0f1620;
+  --muted: #46536a;
+  --weak: #78859b;
+  --line: #e2e7ef;
+  --blue: #1c3a5e;
+  --soft: #e2eaf4;
+  --copper: #9a5a1e;
+  --warm: #f6e7d6;
+  --green: #1b6b4f;
+
+  /* extracted from the prototype, not yet tokens there */
+  --alertbar: #c99b6c;
+  --aggregate-border: #ead4b9;
+  --win-bg: #e4f0e9;
+  --focus-ring: #bc8b59;
+  --private-bg: #f0f2f5;
+  --forecast-btn-bg: #fff8f0;
+}

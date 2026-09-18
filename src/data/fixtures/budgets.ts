@@ -12,15 +12,23 @@ export interface BudgetFixture {
  * "קניות" (shopping) is deliberately absent here: it mixes shared and
  * summary_only spend, so its per-viewer total is computed in
  * src/data/mock/budgets.ts instead of stored as a flat constant.
+ *
+ * Updated in the database-connection round to match exactly what
+ * rpc_budget_status computes from the real seeded transactions
+ * (supabase/seed.sql, supabase/migrations/0002_views_and_rpcs.sql) — the
+ * old numbers here were never actually tied to any individual transaction,
+ * so once a real per-category sum was needed for D3 parity, they had to
+ * change. See REPORT.md "חיבור מסד נתונים". Categories still sum to the
+ * same 14,800 ₪ household total either way.
  */
 export const householdBudgets: BudgetFixture[] = [
-  { key: 'housing', label: 'דיור', spent: 6350, limit: 7000 },
-  { key: 'food', label: 'מזון', spent: 4940, limit: 4750 },
+  { key: 'housing', label: 'דיור', spent: 7650, limit: 7000 },
+  { key: 'food', label: 'מזון', spent: 3530.2, limit: 4750 },
   { key: 'transport', label: 'תחבורה', spent: 290, limit: 1300 },
   { key: 'kids', label: 'ילדים', spent: 2450, limit: 3000 },
   { key: 'insurance', label: 'ביטוחים', spent: 312, limit: 500 },
   { key: 'communication', label: 'תקשורת', spent: 247, limit: 400 },
-  { key: 'leisure', label: 'פנאי', spent: 211, limit: 1800 },
+  { key: 'leisure', label: 'פנאי', spent: 320.8, limit: 1800 },
 ];
 
 export const shoppingBudgetLimit = 1200;

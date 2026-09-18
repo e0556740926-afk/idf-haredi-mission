@@ -139,7 +139,7 @@ create index visibility_log_household_id_idx on visibility_log (household_id, ch
 -- The current member in the context of a household.
 create or replace function current_member_id(p_household uuid)
 returns uuid language sql stable security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   select id from members where user_id = auth.uid() and household_id = p_household limit 1;
 $$;
@@ -148,7 +148,7 @@ $$;
 -- policies can use it without re-triggering RLS on members recursively.
 create or replace function my_household_ids()
 returns setof uuid language sql stable security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   select household_id from members where user_id = auth.uid();
 $$;
@@ -156,7 +156,7 @@ $$;
 -- The effective visibility of a transaction: its own override, else the account's.
 create or replace function effective_visibility(p_account uuid, p_override text)
 returns text language sql stable security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   select coalesce(p_override, (select visibility from accounts where id = p_account));
 $$;
@@ -169,23 +169,57 @@ grant execute on function effective_visibility(uuid, text) to authenticated;
 -- Row Level Security
 -- ---------------------------------------------------------------------------
 -- RLS is the LAST line of defense here, not the only one (CLAUDE.md). The
--- primary defense is that anon/authenticated have ZERO grants on these
--- tables at all (see the revokes at the bottom) — a raw `select` fails with
--- a permission error before RLS is ever evaluated. RLS is enabled and
--- FORCED anyway so that any future, narrower grant (or a view/function
--- running with elevated privilege) still can't see across households or
--- past someone else's visibility setting.
+-- PRIMARY defense is that anon/authenticated have ZERO grants on these
+-- tables at all (see the revokes at the bottom) — a raw `select` fails
+-- with a permission error before RLS is ever evaluated, regardless of
+-- what the policies below say. Every v_*/rpc_* object also does its own
+-- explicit `household_id in (select my_household_ids())` (+ visibility)
+-- filtering in its body, so it is correct on its own terms independent of
+-- RLS too.
+--
+-- None of these tables use FORCE ROW LEVEL SECURITY, and that is
+-- deliberate, not an oversight — two real bugs, found only by actually
+-- running this against Postgres (this schema could not be exercised
+-- against a live database until this round; see REPORT.md "חיבור מסד
+-- נתונים"), are why:
+--
+--   1. my_household_ids()/current_member_id() are security definer
+--      functions, owned by the table owner, that read `members` to
+--      answer "who am I". FORCEing RLS on `members` makes even the
+--      owner subject to its household_isolation policy — which itself
+--      calls my_household_ids() — so evaluating the policy calls the
+--      function calls the policy calls the function... "stack depth
+--      limit exceeded" inside my_household_ids(), 100% reproducible.
+--   2. v_allowance_summary_rows(), v_accounts_existence_rows(), and
+--      every rpc_* below are ALSO security definer, and each needs to
+--      read past the per-row `visibility_enforcement` restriction on
+--      purpose (that IS the point of an aggregate/RPC: summary_only's
+--      total is visible household-wide, and Safe to Spend/settlement
+--      need every member's numbers to produce one shared answer). FORCE
+--      would apply that restrictive policy to these functions too, since
+--      they're owned by the same table-owning role — silently dropping
+--      the partner's rows out of the aggregate instead of erroring, an
+--      even worse failure mode than the recursion (a real leak in the
+--      opposite direction: not "shows too much" but "the summary_only
+--      promise breaks and Safe to Spend stops being the same number for
+--      both partners"). Confirmed live: v_allowance_summary queried as
+--      Yoav returned only his own row instead of Dana's summary until
+--      FORCE was removed.
+--
+-- Without FORCE, the table-owning role's own queries — i.e. exactly
+-- these functions, and nothing a client can reach, since authenticated/
+-- anon have no grant on the tables regardless — bypass RLS as normal
+-- Postgres owner semantics, which is what both problems needed. RLS
+-- stays ENABLED on every table below as real, live protection for the
+-- day a future migration adds a narrower direct grant to a table (a
+-- non-owner role would still be fully subject to these policies then);
+-- it just isn't the mechanism doing the enforcement work today.
 
 alter table households enable row level security;
-alter table households force row level security;
 alter table members enable row level security;
-alter table members force row level security;
 alter table accounts enable row level security;
-alter table accounts force row level security;
 alter table transactions enable row level security;
-alter table transactions force row level security;
 alter table visibility_log enable row level security;
-alter table visibility_log force row level security;
 
 create policy household_isolation on households for select
   using (id in (select my_household_ids()));

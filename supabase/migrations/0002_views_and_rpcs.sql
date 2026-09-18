@@ -97,7 +97,7 @@ grant select on v_activity to authenticated;
 create or replace function v_allowance_summary_rows()
 returns table (household_id uuid, owner_member_id uuid, period text, total numeric, n bigint)
 language sql stable security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   select
     t.household_id,
@@ -119,7 +119,16 @@ grant execute on function v_allowance_summary_rows() to authenticated;
 grant select on v_allowance_summary to authenticated;
 
 -- ---------------------------------------------------------------------------
--- v_accounts_visible — shared accounts, plus the viewer's own (docs/03 #12).
+-- v_accounts_visible — every account except the partner's private ones
+-- (docs/03 #12), with the balance itself masked unless it's shared or
+-- yours (docs/07-data-contract.md: "getAccounts מחזיר balance: null
+-- לחשבון שהצופה אינו רשאי לראות את יתרתו" — summary_only's whole point is
+-- that the ROW is visible, only the amount is hidden; only `private`
+-- makes the row itself disappear, and that's v_accounts_existence's job).
+-- A live run against Postgres caught this: the first version of this view
+-- excluded the partner's summary_only accounts entirely instead of
+-- masking their balance, which would have made them vanish from the
+-- accounts screen instead of showing as "balance hidden".
 -- ---------------------------------------------------------------------------
 create view v_accounts_visible as
 select
@@ -130,13 +139,22 @@ select
   a.kind,
   a.owner_member_id,
   a.visibility,
-  a.current_balance as balance,
+  case
+    when a.visibility = 'shared' or a.owner_member_id = current_member_id(a.household_id)
+      then a.current_balance
+    else null
+  end as balance,
   a.currency,
   a.statement_day,
-  case when a.kind = 'credit_card' and a.current_balance < 0 then -a.current_balance else null end as statement_amount_due
+  case
+    when a.kind = 'credit_card' and a.current_balance < 0
+      and (a.visibility = 'shared' or a.owner_member_id = current_member_id(a.household_id))
+      then -a.current_balance
+    else null
+  end as statement_amount_due
 from accounts a
 where a.household_id in (select my_household_ids())
-  and (a.visibility = 'shared' or a.owner_member_id = current_member_id(a.household_id));
+  and (a.visibility <> 'private' or a.owner_member_id = current_member_id(a.household_id));
 
 grant select on v_accounts_visible to authenticated;
 
@@ -154,7 +172,7 @@ grant select on v_accounts_visible to authenticated;
 create or replace function v_accounts_existence_rows()
 returns table (id uuid, household_id uuid, display_name text, owner_member_id uuid)
 language sql stable security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   select a.id, a.household_id, a.display_name, a.owner_member_id
   from accounts a
@@ -204,7 +222,7 @@ grant select on v_visibility_log to authenticated;
 -- ---------------------------------------------------------------------------
 create or replace function rpc_set_visibility(p_entity_type text, p_id uuid, p_to text)
 returns void language plpgsql security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   v_household_id uuid;
@@ -272,7 +290,7 @@ create or replace function rpc_safe_to_spend(p_household uuid)
 -- TypeScript — see CLAUDE.md "SQL מחשב, AI מנסח".
 returns jsonb
 language plpgsql stable security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   v_liquid numeric;
@@ -346,7 +364,7 @@ returns table (
   percent numeric, is_over_budget boolean, over_by numeric
 )
 language plpgsql stable security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   v_caller uuid;
@@ -372,7 +390,7 @@ begin
         max(limits.limit_amount) as limit_amount
       from transactions t
       join (values
-        ('housing', 7000), ('food', 4750), ('transport', 1300), ('kids', 3000),
+        ('housing', 7000::numeric), ('food', 4750), ('transport', 1300), ('kids', 3000),
         ('insurance', 500), ('communication', 400), ('leisure', 1800), ('shopping', 1200)
       ) as limits(category_key, limit_amount) on limits.category_key = coalesce(t.category_id, 'other')
       where t.household_id = p_household
@@ -402,7 +420,7 @@ create or replace function rpc_settlement(p_household uuid, p_period text)
 -- income-weighted share).
 returns jsonb
 language plpgsql stable security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   v_total_income numeric;
@@ -499,7 +517,7 @@ create or replace function rpc_cashflow(p_household uuid, p_days integer)
 -- safety_buffer — the client never compares floor-vs-expected itself.
 returns table (day date, expected numeric, low numeric, high numeric, is_cliff boolean, shortfall numeric)
 language plpgsql stable security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   v_start_balance numeric;

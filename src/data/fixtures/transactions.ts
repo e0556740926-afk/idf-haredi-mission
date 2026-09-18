@@ -1,4 +1,4 @@
-import type { ActivityRow } from '../types';
+import type { ActivityRow, MemberId } from '../types';
 
 /**
  * The eight seed "key rows" from docs/05-seed-data.md. These are the rows
@@ -126,6 +126,28 @@ export const activityTransactions: ActivityRow[] = [
     surpriseUntil: null,
     partnerSees: 'amount_only',
   },
+];
+
+export interface PersonalLedgerEntry {
+  ownerId: MemberId;
+  amount: number;
+}
+
+/**
+ * docs/05-seed-data.md ("עקרון שהיה חסר"): the activity feed shows a recent
+ * window, but the personal-pocket total is the sum of the WHOLE month —
+ * these entries never render (no merchant/category/date needed) but do
+ * count toward getAllowanceSummaries' total and count. Dana: 5 actions
+ * total (3 in feed + these 2). Yoav: 6 actions total (1 in feed + these 5).
+ */
+export const additionalPersonalLedgerEntries: PersonalLedgerEntry[] = [
+  { ownerId: 'dana', amount: -64 }, // מונית
+  { ownerId: 'dana', amount: -78 }, // פארם
+  { ownerId: 'yoav', amount: -549 }, // אוזניות
+  { ownerId: 'yoav', amount: -320 }, // דלק לטיול
+  { ownerId: 'yoav', amount: -264 }, // מסעדה עם עמיתים
+  { ownerId: 'yoav', amount: -300 }, // ציוד ריצה
+  { ownerId: 'yoav', amount: -187 }, // ספרים
 ];
 
 /**

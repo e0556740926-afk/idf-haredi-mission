@@ -15,17 +15,30 @@ import { formatTemplate, t } from '../../i18n/he';
 
 export function HomeScreen() {
   const { viewerId } = useViewer();
-  const { members, budgets, settlement, goals, accounts } = useHomeScreen(viewerId);
+  const { members, budgets, budgetsOverview, settlement, goals, accounts } = useHomeScreen(viewerId);
   const toggleTransferred = useToggleSettlementTransferred(viewerId);
 
-  if (members.isPending || budgets.isPending || settlement.isPending || goals.isPending || accounts.isPending) {
+  if (
+    members.isPending ||
+    budgets.isPending ||
+    budgetsOverview.isPending ||
+    settlement.isPending ||
+    goals.isPending ||
+    accounts.isPending
+  ) {
     return <Skeleton rows={6} />;
   }
-  if (members.isError || budgets.isError || settlement.isError || goals.isError || accounts.isError) {
+  if (
+    members.isError ||
+    budgets.isError ||
+    budgetsOverview.isError ||
+    settlement.isError ||
+    goals.isError ||
+    accounts.isError
+  ) {
     return <ErrorState />;
   }
 
-  const totalSpent = budgets.data.reduce((sum, b) => sum + b.spent, 0);
   const s = settlement.data;
   const from = s.perMember.find((m) => m.memberId === s.fromMemberId)!;
   const to = s.perMember.find((m) => m.memberId === s.toMemberId)!;
@@ -67,7 +80,7 @@ export function HomeScreen() {
           </div>
         ))}
         <p className="text-[11px] text-muted leading-relaxed mt-2">
-          {formatTemplate(t.home.envelopesFootnote, { amount: formatMoney(totalSpent) })}
+          {formatTemplate(t.home.envelopesFootnote, { amount: formatMoney(budgetsOverview.data.totalSpent) })}
         </p>
       </Card>
 
@@ -117,22 +130,20 @@ export function HomeScreen() {
       {goals.data.length === 0 ? (
         <EmptyState message={t.empty.goals} />
       ) : (
-        goals.data.map((goal) => {
-          const percent = Math.round((goal.currentAmount / goal.targetAmount) * 100);
-          return (
-            <Card key={goal.id}>
-              <div className="flex items-center justify-between">
-                <h3 className="text-[17px]">{goal.label}</h3>
-                <VisibilityBadge visibility={goal.visibility} />
-              </div>
-              <p className="mt-3.5">
-                <Money amount={goal.currentAmount} /> <small>{formatTemplate(t.home.goalOf, { amount: formatMoney(goal.targetAmount) })}</small>
-              </p>
-              <ProgressBar percent={percent} />
-              <small>{formatTemplate(t.home.goalTarget, { date: goal.targetDateLabel })}</small>
-            </Card>
-          );
-        })
+        goals.data.map((goal) => (
+          <Card key={goal.id}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-[17px]">{goal.label}</h3>
+              <VisibilityBadge visibility={goal.visibility} />
+            </div>
+            <p className="mt-3.5">
+              <Money amount={goal.currentAmount} />{' '}
+              <small>{formatTemplate(t.home.goalOf, { amount: formatMoney(goal.targetAmount) })}</small>
+            </p>
+            <ProgressBar percent={goal.percentComplete} />
+            <small>{formatTemplate(t.home.goalTarget, { date: goal.targetDateLabel })}</small>
+          </Card>
+        ))
       )}
 
       <div className="flex items-center justify-between my-6 mb-3">

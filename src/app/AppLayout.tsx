@@ -1,11 +1,13 @@
+import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet } from 'react-router-dom';
 import { useViewer } from './DevViewerContext';
-import { members } from '../data/fixtures/household';
+import { getMembers } from '../data';
 import { BottomNav } from '../components/BottomNav';
 import { t, formatTemplate } from '../i18n/he';
 
 export function AppLayout() {
   const { viewerId, setViewerId } = useViewer();
+  const { data: members } = useQuery({ queryKey: ['members', viewerId], queryFn: () => getMembers(viewerId) });
 
   return (
     <div className="min-h-screen bg-bg pb-[70px]">
@@ -20,7 +22,7 @@ export function AppLayout() {
           </b>
         </div>
 
-        {import.meta.env.DEV && (
+        {import.meta.env.DEV && members && (
           <div className="flex items-center gap-1.5 text-[11px]" aria-label={t.common.devTools}>
             {members.map((m) => (
               <button

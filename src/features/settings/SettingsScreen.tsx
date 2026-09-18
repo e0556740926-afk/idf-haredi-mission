@@ -5,6 +5,7 @@ import { Card } from '../../components/Card';
 import { VisibilityBadge } from '../../components/VisibilityBadge';
 import { Skeleton, ErrorState, EmptyState } from '../../components/ScreenStates';
 import { formatMoney } from '../../lib/money';
+import { formatDateShort } from '../../lib/date';
 import { formatTemplate, t } from '../../i18n/he';
 import type { Archetype, VisibilityLogEntry } from '../../data/types';
 
@@ -83,7 +84,7 @@ export function SettingsScreen() {
 }
 
 function VisibilityLogRow({ entry }: { entry: VisibilityLogEntry }) {
-  const at = new Intl.DateTimeFormat('he-IL', { dateStyle: 'short' }).format(new Date(entry.at));
+  const at = formatDateShort(entry.at);
   return (
     <Card>
       <p className="text-[12px]">

@@ -6,6 +6,7 @@ export const goals: Goal[] = [
     label: 'חופשה ביוון',
     targetAmount: 12000,
     currentAmount: 4200,
+    percentComplete: 35,
     targetDateLabel: 'יולי 2027',
     visibility: 'shared',
   },

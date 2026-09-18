@@ -8,11 +8,12 @@
 export { getHousehold, getMembers } from './mock/household';
 export { getActivity, getOwnRestrictedActivity } from './mock/activity';
 export { getAllowanceSummaries } from './mock/allowance';
+export { getPockets } from './mock/pockets';
 export { getAccounts, getPrivateAccountsExistence } from './mock/accounts';
 export { getSafeToSpend } from './mock/safeToSpend';
 export { getCashflow, getKnownCashflowItems } from './mock/cashflow';
-export { getBudgets } from './mock/budgets';
-export { getRecurring } from './mock/recurring';
+export { getBudgets, getBudgetsOverview } from './mock/budgets';
+export { getRecurring, getRecurringMonthlyTotal } from './mock/recurring';
 export { getInsights, getVerifiedAnnualSaving } from './mock/insights';
 export { getGoals } from './mock/goals';
 export { getSettlement, markSettlementTransferred } from './mock/settlement';

@@ -101,11 +101,7 @@ export function ActivityScreen() {
             <AggregateCard
               name={partnerSummary.ownerName}
               amount={partnerSummary.total}
-              countLabel={
-                partnerSummary.count !== null
-                  ? formatTemplate(t.activity.aggregateCountActions, { count: partnerSummary.count })
-                  : t.activity.aggregateCountGeneric
-              }
+              countLabel={formatTemplate(t.activity.aggregateCountActions, { count: partnerSummary.count })}
             />
           )}
 

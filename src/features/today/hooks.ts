@@ -1,28 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  getBudgets,
+  getAccounts,
+  getBudgetsOverview,
   getHousehold,
   getMembers,
-  getRecurring,
+  getPockets,
   getSafeToSpend,
 } from '../../data';
 import { currentPeriod } from '../../lib/date';
-import { getPocketsStatus } from '../home/pockets';
 import type { MemberId } from '../../data/types';
 
 export function useTodayScreen(viewerId: MemberId) {
   const household = useQuery({ queryKey: ['household', viewerId], queryFn: () => getHousehold(viewerId) });
   const members = useQuery({ queryKey: ['members', viewerId], queryFn: () => getMembers(viewerId) });
   const safeToSpend = useQuery({ queryKey: ['safeToSpend', viewerId], queryFn: () => getSafeToSpend(viewerId) });
-  const budgets = useQuery({
-    queryKey: ['budgets', viewerId, currentPeriod()],
-    queryFn: () => getBudgets(viewerId, currentPeriod()),
+  const budgetsOverview = useQuery({
+    queryKey: ['budgetsOverview', viewerId, currentPeriod()],
+    queryFn: () => getBudgetsOverview(viewerId, currentPeriod()),
   });
-  const recurring = useQuery({ queryKey: ['recurring', viewerId], queryFn: () => getRecurring(viewerId) });
   const pockets = useQuery({
     queryKey: ['pockets'],
-    queryFn: () => getPocketsStatus(),
+    queryFn: () => getPockets(),
   });
+  const accounts = useQuery({ queryKey: ['accounts', viewerId], queryFn: () => getAccounts(viewerId) });
 
-  return { household, members, safeToSpend, budgets, recurring, pockets };
+  return { household, members, safeToSpend, budgetsOverview, pockets, accounts };
 }

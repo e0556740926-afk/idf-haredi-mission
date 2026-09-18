@@ -1,4 +1,6 @@
-import { parseIsoDate } from '../lib/date';
+import { formatShortDayMonth, parseIsoDate } from '../lib/date';
+import { formatMoney, formatMoneyPlain } from '../lib/money';
+import { t, formatTemplate } from '../i18n/he';
 import type { CashflowCliff, CashflowPoint } from '../data/types';
 
 const WIDTH = 320;
@@ -55,7 +57,7 @@ export function ForecastChart({
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       role="img"
-      aria-label="תחזית יתרת הבית ל־90 יום, ציר הזמן מתקדם מימין לשמאל"
+      aria-label={t.flow.chartAriaLabel}
       className="w-full h-auto overflow-visible"
     >
       <defs>
@@ -67,12 +69,12 @@ export function ForecastChart({
 
       <path d={`M${LEFT} ${y(maxValue)}H${RIGHT}`} stroke="#e2e7ef" strokeDasharray="3 5" />
       <text x={RIGHT - 2} y={y(maxValue) + 4} textAnchor="end" fontSize={10} fill="var(--muted)">
-        {Math.round(maxValue).toLocaleString('he-IL')}
+        {formatMoneyPlain(maxValue)}
       </text>
 
       <path d={`M${LEFT} ${y(floor)}H${RIGHT}`} stroke="#9a5a1e" strokeDasharray="5 5" />
       <text x={RIGHT - 2} y={y(floor) + 16} textAnchor="end" fontSize={10} fill="var(--muted)">
-        {`רצפה: ${floor.toLocaleString('he-IL')} ₪`}
+        {formatTemplate(t.flow.floorLabel, { amount: formatMoney(floor) })}
       </text>
 
       <path d={areaPath} fill="url(#forecastShade)" />
@@ -103,10 +105,10 @@ export function ForecastChart({
       ))}
 
       <text x={RIGHT + 1} y={239} textAnchor="end" fontSize={10} fill="var(--muted)">
-        {new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'short' }).format(minDate)}
+        {formatShortDayMonth(new Date(minDate))}
       </text>
       <text x={LEFT} y={239} textAnchor="start" fontSize={10} fill="var(--muted)">
-        {new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'short' }).format(maxDate)}
+        {formatShortDayMonth(new Date(maxDate))}
       </text>
     </svg>
   );

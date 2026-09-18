@@ -1,6 +1,16 @@
-import { householdBudgets, shoppingBudgetLimit } from '../fixtures/budgets';
+import {
+  householdBudgetedTotal,
+  householdBudgets,
+  sharedBudgetUtilizationPercent,
+  shoppingBudgetLimit,
+} from '../fixtures/budgets';
 import { activityTransactions } from '../fixtures/transactions';
 import type { BudgetEnvelope, MemberId } from '../types';
+
+export interface BudgetsOverview {
+  totalSpent: number;
+  percent: number;
+}
 
 function toEnvelope(key: string, label: string, spent: number, limit: number): BudgetEnvelope {
   const percent = Math.round((spent / limit) * 100);
@@ -32,4 +42,14 @@ export async function getBudgets(viewerId: MemberId, _period: string): Promise<B
     ...householdBudgets.map((b) => toEnvelope(b.key, b.label, b.spent, b.limit)),
     toEnvelope('shopping', 'קניות', shoppingSpent, shoppingBudgetLimit),
   ];
+}
+
+/**
+ * The Today screen's single shared-budget bar and the Home screen's
+ * envelopes footnote both come from here — literal fixture values (see
+ * docs/05-seed-data.md and fixtures/budgets.ts), not summed from the
+ * per-category envelopes above, which don't reduce to either number.
+ */
+export async function getBudgetsOverview(_viewerId: MemberId, _period: string): Promise<BudgetsOverview> {
+  return { totalSpent: householdBudgetedTotal, percent: sharedBudgetUtilizationPercent };
 }

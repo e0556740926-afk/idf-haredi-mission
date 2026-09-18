@@ -24,3 +24,19 @@ export const householdBudgets: BudgetFixture[] = [
 ];
 
 export const shoppingBudgetLimit = 1200;
+
+/**
+ * docs/05-seed-data.md: "סה״כ הוצאות הבית ששויכו לתקציב: 14,800 ₪" — the sum
+ * of the seven household categories above (שoping excluded, since it isn't
+ * one of the budgeted envelopes the seed doc totals). Stored literally
+ * rather than derived by summing householdBudgets in TypeScript.
+ */
+export const householdBudgetedTotal = 14800;
+
+/**
+ * design/prototype.html's Today screen shows "68% נוצלו" for the shared
+ * budget bar — a number that doesn't reduce out of the category table above
+ * (its categories' totals don't add up to a clean 68%), so it's its own
+ * literal fixture value rather than something computed from householdBudgets.
+ */
+export const sharedBudgetUtilizationPercent = 68;

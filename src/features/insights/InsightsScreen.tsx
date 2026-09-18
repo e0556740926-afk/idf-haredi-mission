@@ -44,10 +44,12 @@ export function InsightsScreen() {
             </div>
             <p className="text-[12px] text-muted mt-1">{insight.detail}</p>
             <div className="flex justify-between items-center mt-2 text-[12px]">
-              <span className={insight.annualImpact >= 0 ? 'text-green' : 'text-copper'}>
+              <span className={insight.annualImpactDirection === 'saving' ? 'text-green' : 'text-copper'}>
                 {formatTemplate(
-                  insight.annualImpact >= 0 ? t.insights.annualImpactPositive : t.insights.annualImpactNegative,
-                  { amount: formatMoney(Math.abs(insight.annualImpact)) },
+                  insight.annualImpactDirection === 'saving'
+                    ? t.insights.annualImpactPositive
+                    : t.insights.annualImpactNegative,
+                  { amount: formatMoney(insight.annualImpactAbs) },
                 )}
               </span>
               <small className="text-muted">

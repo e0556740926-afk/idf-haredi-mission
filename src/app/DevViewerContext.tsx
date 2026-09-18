@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { members } from '../data/fixtures/household';
-import type { MemberId } from '../data/types';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { getMembers } from '../data';
+import type { Member, MemberId } from '../data/types';
 
 interface DevViewerContextValue {
   viewerId: MemberId;
@@ -10,11 +11,15 @@ interface DevViewerContextValue {
 const DevViewerContext = createContext<DevViewerContextValue | null>(null);
 
 const STORAGE_KEY = 'duet.dev.viewerId';
+const BOOTSTRAP_VIEWER_ID: MemberId = 'dana';
 
-function initialViewerId(): MemberId {
-  if (typeof window === 'undefined') return members[0].id;
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  return members.some((m) => m.id === stored) ? (stored as MemberId) : members[0].id;
+function readStoredViewerId(): MemberId | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -23,9 +28,28 @@ function initialViewerId(): MemberId {
  * viewerId across the whole app — see PROMPT-FULL-BUILD.md point 2. It is
  * not the same thing as the prototype's in-screen "Dana / Yoav" toggle,
  * which only ever affected the Activity screen.
+ *
+ * Like every other consumer, this only reaches the household's member list
+ * through src/data (getMembers) — never src/data/fixtures directly. Because
+ * that call is async and a viewerId is needed before it can resolve, state
+ * bootstraps from BOOTSTRAP_VIEWER_ID (or whatever was already stored) and
+ * self-corrects once the real member list loads.
  */
 export function DevViewerProvider({ children }: { children: ReactNode }) {
-  const [viewerId, setViewerIdState] = useState<MemberId>(initialViewerId);
+  const [viewerId, setViewerIdState] = useState<MemberId>(
+    () => readStoredViewerId() ?? BOOTSTRAP_VIEWER_ID,
+  );
+
+  const { data: members } = useQuery({
+    queryKey: ['members', 'bootstrap'],
+    queryFn: () => getMembers(BOOTSTRAP_VIEWER_ID),
+  });
+
+  useEffect(() => {
+    if (members && !members.some((m: Member) => m.id === viewerId)) {
+      setViewerIdState(members[0].id);
+    }
+  }, [members, viewerId]);
 
   const setViewerId = (id: MemberId) => {
     setViewerIdState(id);

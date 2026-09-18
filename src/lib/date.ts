@@ -9,6 +9,8 @@ const dayMonthFormatter = new Intl.DateTimeFormat('he-IL', { day: 'numeric', mon
 const shortDayMonthFormatter = new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'short' });
 const weekdayFormatter = new Intl.DateTimeFormat('he-IL', { weekday: 'long' });
 const monthFormatter = new Intl.DateTimeFormat('he-IL', { month: 'long' });
+const dateOnlyFormatter = new Intl.DateTimeFormat('he-IL', { dateStyle: 'short' });
+const dateTimeFormatter = new Intl.DateTimeFormat('he-IL', { dateStyle: 'short', timeStyle: 'short' });
 
 export function parseIsoDate(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
@@ -44,6 +46,16 @@ export function currentPeriod(date: Date = DEMO_TODAY): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   return `${y}-${m}`;
+}
+
+/** Short locale date, e.g. for a visibility log entry's timestamp. */
+export function formatDateShort(isoTimestamp: string): string {
+  return dateOnlyFormatter.format(new Date(isoTimestamp));
+}
+
+/** Short locale date + time, e.g. for "last synced at" banners. */
+export function formatDateTimeShort(isoTimestamp: string): string {
+  return dateTimeFormatter.format(new Date(isoTimestamp));
 }
 
 export function formatIsoAsDots(iso: string): string {

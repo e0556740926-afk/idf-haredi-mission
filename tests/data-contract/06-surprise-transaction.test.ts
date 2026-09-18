@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getActivity, getAllowanceSummaries } from '../../src/data';
 
-describe('surprise transaction — docs/07-data-contract.md #4', () => {
+describe('surprise transaction — docs/05-seed-data.md test #6', () => {
   it("is absent from yoav's activity feed", async () => {
     const rows = await getActivity('yoav');
     expect(rows.find((r) => r.id === 'tx-7')).toBeUndefined();

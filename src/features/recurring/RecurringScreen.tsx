@@ -10,12 +10,10 @@ import { formatTemplate, t } from '../../i18n/he';
 
 export function RecurringScreen() {
   const { viewerId } = useViewer();
-  const { members, recurring } = useRecurringScreen(viewerId);
+  const { members, recurring, monthlyTotal } = useRecurringScreen(viewerId);
 
-  if (members.isPending || recurring.isPending) return <Skeleton rows={4} />;
-  if (members.isError || recurring.isError) return <ErrorState />;
-
-  const monthlyTotal = recurring.data.reduce((sum, r) => sum + r.amount, 0);
+  if (members.isPending || recurring.isPending || monthlyTotal.isPending) return <Skeleton rows={4} />;
+  if (members.isError || recurring.isError || monthlyTotal.isError) return <ErrorState />;
 
   return (
     <div>
@@ -24,7 +22,7 @@ export function RecurringScreen() {
       <Card tone="warm">
         <small>{t.recurring.monthlyTotal}</small>
         <b className="block text-[26px] font-normal my-[9px]">
-          <Money amount={-monthlyTotal} />
+          <Money amount={-monthlyTotal.data} />
         </b>
         <VisibilityBadge visibility="shared" />
       </Card>

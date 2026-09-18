@@ -1,4 +1,5 @@
 import { t, formatTemplate } from '../i18n/he';
+import { formatDateTimeShort } from '../lib/date';
 import { Card } from './Card';
 import { Button } from './Button';
 
@@ -36,9 +37,7 @@ export function ErrorState({ onRetry }: { onRetry?: () => void }) {
 }
 
 export function ConnectionBrokenBanner({ lastSyncedAt }: { lastSyncedAt: string | null }) {
-  const time = lastSyncedAt
-    ? new Intl.DateTimeFormat('he-IL', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(lastSyncedAt))
-    : '—';
+  const time = lastSyncedAt ? formatDateTimeShort(lastSyncedAt) : '—';
   return (
     <Card className="border-r-[3px] border-r-alertbar">
       <h4 className="text-[13px] font-medium mb-1">{t.errors.connectionBrokenTitle}</h4>

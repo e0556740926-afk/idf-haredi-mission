@@ -46,8 +46,7 @@ export interface AllowanceSummary {
   ownerName: string;
   period: string; // YYYY-MM
   total: number;
-  /** null when the exact action count isn't known yet — render a generic label instead. */
-  count: number | null;
+  count: number;
   // Deliberately no merchantName, no categoryKey, no exact dates.
 }
 
@@ -77,6 +76,8 @@ export interface AccountRow {
   balance: number | null; // null when the viewer may not see the balance
   currency: string;
   statementDay: number | null;
+  /** Positive amount due at the next statement (credit cards only). */
+  statementAmountDue: number | null;
   syncState: SyncState;
   lastSyncedAt: string | null;
 }
@@ -150,7 +151,9 @@ export interface Insight {
   id: string;
   title: string;
   detail: string;
-  annualImpact: number;
+  /** Always positive — pair with annualImpactDirection to know saving vs. cost. */
+  annualImpactAbs: number;
+  annualImpactDirection: 'saving' | 'cost';
   impact: InsightImpact;
   isVerified: boolean;
 }
@@ -160,6 +163,7 @@ export interface Goal {
   label: string;
   targetAmount: number;
   currentAmount: number;
+  percentComplete: number;
   targetDateLabel: string;
   visibility: Visibility;
 }
@@ -210,3 +214,13 @@ export interface VisibilityLogEntry {
 }
 
 export type VisibilityEntityType = 'account' | 'transaction';
+
+export interface PocketStatus {
+  memberId: MemberId;
+  name: string;
+  allowance: number;
+  used: number;
+  usedCount: number;
+  remaining: number;
+  percentUsed: number;
+}

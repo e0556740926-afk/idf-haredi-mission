@@ -1,4 +1,5 @@
 import { Avatars } from './Avatars';
+import { t } from '../i18n/he';
 import type { Member } from '../data/types';
 
 export function PageHead({
@@ -16,7 +17,7 @@ export function PageHead({
         <div className="text-[12px] text-muted mb-1">{eyebrow}</div>
         <h2>{title}</h2>
       </div>
-      <Avatars members={members} ariaLabel={members.map((m) => m.displayName).join(' ו')} />
+      <Avatars members={members} ariaLabel={members.map((m) => m.displayName).join(t.common.and)} />
     </div>
   );
 }

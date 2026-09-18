@@ -19,23 +19,32 @@ import { useToast } from '../../app/ToastProvider';
 
 export function TodayScreen() {
   const { viewerId } = useViewer();
-  const { household, members, safeToSpend, budgets, pockets } = useTodayScreen(viewerId);
+  const { household, members, safeToSpend, budgetsOverview, pockets, accounts } = useTodayScreen(viewerId);
   const [modal, setModal] = useState<'gym' | 'netflix' | null>(null);
   const showToast = useToast();
 
-  if (household.isPending || members.isPending || safeToSpend.isPending || budgets.isPending || pockets.isPending) {
+  if (
+    household.isPending ||
+    members.isPending ||
+    safeToSpend.isPending ||
+    budgetsOverview.isPending ||
+    pockets.isPending ||
+    accounts.isPending
+  ) {
     return <Skeleton rows={5} />;
   }
-  if (household.isError || members.isError || safeToSpend.isError || budgets.isError || pockets.isError) {
+  if (
+    household.isError ||
+    members.isError ||
+    safeToSpend.isError ||
+    budgetsOverview.isError ||
+    pockets.isError ||
+    accounts.isError
+  ) {
     return <ErrorState />;
   }
 
-  const overallBudget = budgets.data.reduce(
-    (acc, b) => ({ spent: acc.spent + b.spent, limit: acc.limit + b.limit }),
-    { spent: 0, limit: 0 },
-  );
-  const overallPercent = Math.round((overallBudget.spent / overallBudget.limit) * 100);
-  const creditCard = { amount: 8740, day: 10 };
+  const creditCardAccount = accounts.data.find((a) => a.kind === 'credit_card');
 
   return (
     <div>
@@ -57,19 +66,23 @@ export function TodayScreen() {
           <VisibilityBadge visibility="shared" />
         </div>
       </section>
-      <div className="text-center border-t border-line pt-3 text-[11px] text-muted">
-        {formatTemplate(t.today.creditLine, {
-          amount: formatMoney(creditCard.amount),
-          day: creditCard.day,
-        })}
-      </div>
+      {creditCardAccount?.statementAmountDue != null && (
+        <div className="text-center border-t border-line pt-3 text-[11px] text-muted">
+          {formatTemplate(t.today.creditLine, {
+            amount: formatMoney(creditCardAccount.statementAmountDue),
+            day: creditCardAccount.statementDay ?? '',
+          })}
+        </div>
+      )}
 
       <div className="mt-[21px]">
         <div className="flex justify-between text-[12px]">
           <small>{t.today.budgetLabel}</small>
-          <small className="num">{formatTemplate(t.today.budgetUsed, { percent: `${overallPercent}%` })}</small>
+          <small className="num">
+            {formatTemplate(t.today.budgetUsed, { percent: `${budgetsOverview.data.percent}%` })}
+          </small>
         </div>
-        <ProgressBar percent={overallPercent} overBudget={overallBudget.spent > overallBudget.limit} />
+        <ProgressBar percent={budgetsOverview.data.percent} />
       </div>
 
       <div className="flex items-center justify-between my-6 mb-3">
@@ -79,7 +92,7 @@ export function TodayScreen() {
         {pockets.data.map((pocket) => (
           <Card key={pocket.memberId} className="text-center p-[15px_10px]">
             <span>{formatTemplate(t.today.pocketOf, { name: pocket.name })}</span>
-            <ProgressRing percent={pocket.percentUsed} label={`${Math.round(pocket.percentUsed)}%`} />
+            <ProgressRing percent={pocket.percentUsed} label={`${pocket.percentUsed}%`} />
             <b className="block text-[20px] font-medium">
               <Money amount={pocket.remaining} />
             </b>

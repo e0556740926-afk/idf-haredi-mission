@@ -80,7 +80,7 @@ export function RitualScreen() {
 
       <div className="flex justify-between border-t border-line py-3 text-muted text-[12px]">
         <span>{formatTemplate(t.ritual.streak, { count: r.streakMonths })}</span>
-        <span className="text-copper tracking-[5px]" aria-label={`${r.streakMonths} חודשים`}>
+        <span className="text-copper tracking-[5px]" aria-label={formatTemplate(t.ritual.streak, { count: r.streakMonths })}>
           {'●'.repeat(r.streakMonths)}
         </span>
       </div>

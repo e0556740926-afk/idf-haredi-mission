@@ -7,3 +7,6 @@ export const browserExecutable = "/opt/pw-browsers/chromium_headless_shell-1194/
 
 export const makeBundle = () =>
   bundle({ entryPoint: path.join(root, "src/index.ts"), publicDir: path.join(root, "public") });
+
+// WebGL without a GPU: SwiftShader through ANGLE.
+export const chromiumOptions = { gl: process.env.REMOTION_GL ?? "swangle" };

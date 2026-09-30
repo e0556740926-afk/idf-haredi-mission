@@ -1,14 +1,14 @@
 import React from "react";
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { BRAND, COLORS, COUNTRIES, COUNTRY_TIMING as T, FONTS, VIDEO } from "../config";
-import { FoodIcon } from "../components/FoodIcons";
-import { GoldDust } from "../components/GoldDust";
-import { MapBackdrop, type LegDraw } from "../components/MapBackdrop";
-import { Motif } from "../components/Motifs";
+import { AbsoluteFill, Easing, interpolate, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
+import { COLORS, COUNTRIES, COUNTRY_TIMING as T, FONTS, VIDEO } from "../config";
+import { EASE_IN_OUT, EASE_OUT } from "../components/Foil";
+import { Finish, LightLeak, LowerBand, NightSky } from "../components/Fx";
+import { MenuCard } from "../components/MenuCard";
 import { FramedImage } from "../components/Placeholder";
-import { Sentences } from "../components/Sentences";
 import { Sfx, Voice } from "../components/Sound";
-import { countryCam, legCam, lerpCam, planeOnLeg } from "../lib/camera";
+import { Subtitles } from "../components/Subtitles";
+import { Globe } from "../three/Globe";
+import { countryShot, legShot, shotLerp } from "../three/geo";
 import { assetSrc, italyPhotos } from "../lib/assets";
 import { sec, sentenceWindows } from "../lib/timing";
 
@@ -17,42 +17,31 @@ export type CountryProps = { index: number; voiceSec: number };
 export const countryFrames = (voiceSec: number) => sec(voiceSec) + sec(VIDEO.transitionSec);
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
-const ramp = (f: number, a: number, b: number, ease = Easing.inOut(Easing.cubic)) =>
+const ramp = (f: number, a: number, b: number, ease: (t: number) => number = EASE_IN_OUT) =>
   interpolate(f, [a, b], [0, 1], { ...clamp, easing: ease });
 
-const GateTag: React.FC<{ gate: string; name: string; p: number }> = ({ gate, name, p }) => (
-  <div dir="rtl" style={{ position: "absolute", right: 80, top: 64, opacity: p, transform: `translateX(${(1 - p) * 80}px)`,
-    display: "flex", alignItems: "stretch", border: `2px solid ${COLORS.gold}`, borderRadius: 14, overflow: "hidden",
-    background: COLORS.blue, boxShadow: `0 0 30px rgba(224,184,98,0.25)` }}>
-    <div style={{ padding: "14px 30px", background: COLORS.gold, color: COLORS.night, fontFamily: FONTS.title, fontSize: 46, lineHeight: 1.1 }}>
-      {gate}
-    </div>
-    <div style={{ padding: "10px 28px", display: "flex", flexDirection: "column", justifyContent: "center", borderRight: `2px dashed ${COLORS.gold}` }}>
-      <div style={{ fontFamily: FONTS.body, fontWeight: 500, fontSize: 18, letterSpacing: 4, color: COLORS.gold }}>{`${BRAND.airline} · ${BRAND.flight}`}</div>
-      <div style={{ fontFamily: FONTS.title, fontSize: 34, color: COLORS.cream }}>{name}</div>
-    </div>
-  </div>
-);
-
-const ItalyPhotos: React.FC<{ from: number; to: number; appear: number }> = ({ from, to, appear }) => {
+/** Italy — photos floating in gold frames with a slow Ken Burns. */
+const PhotoGallery: React.FC<{ from: number; to: number; appear: number }> = ({ from, to, appear }) => {
   const frame = useCurrentFrame();
   const photos: (string | null)[] = italyPhotos.length ? italyPhotos : [null, null, null];
   const span = (to - from) / photos.length;
-  const xf = 14;
+  const xf = 18;
   return (
-    <div style={{ position: "absolute", left: 150, top: 190, width: 980, height: 600, opacity: appear,
-      transform: `rotate(-1.5deg) scale(${0.94 + appear * 0.06})` }}>
+    <div style={{ position: "absolute", left: 120, top: 150, width: 900, height: 600, perspective: 1800, opacity: appear }}>
       {photos.map((p, i) => {
         const a = from + i * span;
         const b = a + span;
         const op = interpolate(frame, [a - xf, a, b - xf, b], [0, 1, 1, i === photos.length - 1 ? 1 : 0], clamp);
         if (op <= 0) return null;
         const kb = interpolate(frame, [a - xf, b], [0, 1], clamp);
+        const inP = interpolate(frame, [a - xf, a + 10], [0, 1], { ...clamp, easing: EASE_OUT });
         const dir = i % 2 ? 1 : -1;
         return (
-          <FramedImage key={i} src={p ? assetSrc(p) : null} width={980} height={600}
-            style={{ position: "absolute", inset: 0, opacity: op }}
-            imgStyle={{ transform: `scale(${1.04 + kb * 0.12}) translate(${dir * kb * 18}px, ${-kb * 10}px)` }} />
+          <div key={i} style={{ position: "absolute", inset: 0, opacity: op,
+            transform: `rotateY(${8 * dir + (1 - inP) * 14 * dir}deg) rotateZ(${-1.2 * dir}deg) translateZ(${(1 - inP) * -120}px)` }}>
+            <FramedImage src={p ? assetSrc(p) : null} width={900} height={600}
+              imgStyle={{ transform: `scale(${1.06 + kb * 0.12}) translate(${dir * kb * 20}px, ${-kb * 12}px)` }} />
+          </div>
         );
       })}
     </div>
@@ -62,82 +51,61 @@ const ItalyPhotos: React.FC<{ from: number; to: number; appear: number }> = ({ f
 export const CountryScene: React.FC<CountryProps> = ({ index, voiceSec }) => {
   const frame = useCurrentFrame();
   const { durationInFrames: D } = useVideoConfig();
-  const k = index + 1; // stop number
+  const k = index + 1;
   const country = COUNTRIES[index];
   const tr = sec(VIDEO.transitionSec);
   const inLeg = k - 1;
   const outLeg = k;
 
-  // landing + zoom in, then take-off + zoom out
-  const land = ramp(frame, sec(T.landing[0]), sec(T.landing[1]), Easing.out(Easing.cubic));
-  const zoom = ramp(frame, sec(T.zoomIn[0]), sec(T.zoomIn[1]));
-  const exit = ramp(frame, D - tr, D, Easing.in(Easing.cubic));
-  const cam = exit > 0 ? lerpCam(countryCam(country.coords), legCam(outLeg), ramp(frame, D - tr, D)) : lerpCam(legCam(inLeg), countryCam(country.coords), zoom);
+  const land = ramp(frame, sec(T.landing[0]), sec(T.landing[1]) + 6, Easing.out(Easing.cubic));
+  const zoom = ramp(frame, sec(T.zoomIn[0]), sec(T.zoomIn[1]) + 10);
+  const exit = ramp(frame, D - tr - 6, D, Easing.in(Easing.cubic));
+  const exitCam = ramp(frame, D - tr - 6, D);
 
-  const legs: LegDraw[] = Array.from({ length: k }, (_, i) => ({ index: i, draw: i === inLeg ? 0.55 + 0.45 * land : 1 }));
-  if (exit > 0) legs.push({ index: outLeg, draw: exit * 0.55 });
-  const bob = Math.sin(frame / 14) * 0.03;
-  const plane = exit > 0
-    ? { ...planeOnLeg(outLeg, exit * 0.55), scale: 1 + exit * 0.3 }
-    : { ...planeOnLeg(inLeg, 0.55 + 0.45 * land), scale: (land < 1 ? 1.15 - 0.15 * land : 1) + bob };
+  const stay = shotLerp(legShot(inLeg), countryShot(k), zoom);
+  const drift = frame / D;
+  stay.dist *= 1 - 0.06 * drift; // slow push-in while talking
+  stay.sx += 0.02 * Math.sin(drift * Math.PI);
+  const shot = exit > 0 ? shotLerp(countryShot(k), legShot(outLeg), exitCam) : stay;
 
-  // content
-  const out = interpolate(frame, [D - tr - 4, D - tr + 10], [1, 0], clamp);
-  const nameIn = ramp(frame, sec(T.nameIn), sec(T.nameIn) + 24, Easing.out(Easing.cubic));
-  const motifIn = ramp(frame, sec(T.motifIn), sec(T.motifIn) + 30, Easing.out(Easing.cubic));
-  const fadeIn = index === 0 ? interpolate(frame, [0, 10], [0, 1], clamp) : 1;
+  const legs = Array.from({ length: k }, (_, i) => ({ index: i, draw: i === inLeg ? 0.5 + 0.5 * land : 1 }));
+  if (exit > 0) legs.push({ index: outLeg, draw: exit * 0.5 });
+  const plane = exit > 0 ? { leg: outLeg, t: 0.5 * exit, scale: 1 } : { leg: inLeg, t: 0.5 + 0.5 * land, scale: 1.1 - 0.5 * land };
+
+  const cardStart = sec(T.nameIn);
+  const nameIn = ramp(frame, cardStart, cardStart + 40, EASE_OUT);
+  const out = interpolate(frame, [D - tr - 6, D - tr + 12], [1, 0], clamp);
   const isItaly = country.motif === "photos";
 
-  const voiceF = sec(voiceSec);
-  const windows = sentenceWindows(country.sentences, voiceF);
+  const windows = sentenceWindows(country.sentences, sec(voiceSec));
   windows[0].from = Math.max(windows[0].from, sec(T.firstTextAt));
 
-  const iconDraw = (i: number) => ramp(frame, sec(T.iconsIn + i * T.iconStagger), sec(T.iconsIn + i * T.iconStagger + T.iconDraw), Easing.inOut(Easing.quad));
-  const label = (text: string, p: number, size: number) => (
-    <div style={{ fontFamily: FONTS.body, fontWeight: 500, fontSize: size, color: COLORS.goldLight, opacity: p,
-      textShadow: `0 0 16px ${COLORS.night}` }}>{text}</div>
-  );
-
   return (
-    <AbsoluteFill style={{ background: `radial-gradient(ellipse at 50% 40%, ${COLORS.blue}, ${COLORS.night} 72%)`, opacity: fadeIn }}>
-      <MapBackdrop cam={cam} legs={legs} stops={Array.from({ length: k + 1 }, (_, i) => i)} pulseStop={exit > 0 ? undefined : k}
-        plane={plane} mapOpacity={interpolate(zoom - exit, [0, 1], [0.55, 0.3], clamp)} />
-      <GoldDust count={60} seed={`c${k}`} />
+    <AbsoluteFill style={{ background: "#000" }}>
+      <NightSky x={35} y={45} />
+      {/* giant country name, engraved outline, behind the globe */}
+      <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "flex-start", padding: "0 0 60px 40px", opacity: out }}>
+        <div dir="rtl" style={{ fontFamily: FONTS.title, fontSize: Math.min(360, 2600 / country.name.length), lineHeight: 1, color: "transparent",
+          WebkitTextStroke: `1.5px ${COLORS.gold}`, opacity: 0.22 * nameIn, whiteSpace: "nowrap",
+          transform: `translateX(${(1 - nameIn) * -80 + frame * 0.15}px)` }}>
+          {country.name}
+        </div>
+      </AbsoluteFill>
+      <Globe shot={shot} legs={legs} stops={Array.from({ length: k + 1 }, (_, i) => i)} pulseStop={exit > 0 ? undefined : k} plane={plane}
+        intensity={isItaly ? 1 - 0.35 * nameIn * out : 1} />
 
       <AbsoluteFill style={{ opacity: out }}>
-        {/* giant country name */}
-        <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
-          <div dir="rtl" style={{ fontFamily: FONTS.title, fontSize: Math.min(420, 3400 / country.name.length), color: COLORS.gold,
-            opacity: 0.09 * nameIn, transform: `scale(${1.12 - 0.12 * nameIn})`, whiteSpace: "nowrap", marginTop: 60 }}>
-            {country.name}
-          </div>
-        </AbsoluteFill>
-
-        <Motif kind={country.motif} appear={motifIn} />
-        <GateTag gate={country.gate} name={country.name} p={nameIn} />
-
-        {isItaly ? (
-          <>
-            <ItalyPhotos from={sec(T.nameIn)} to={D - tr} appear={nameIn} />
-            <div dir="rtl" style={{ position: "absolute", right: 170, top: 230, display: "flex", flexDirection: "column", gap: 26, alignItems: "center" }}>
-              {country.foods.map((f, i) => (
-                <FoodIcon key={f} name={f} draw={iconDraw(i)} size={112} label={label(f, iconDraw(i), 30)} />
-              ))}
-            </div>
-          </>
-        ) : (
-          <div dir="rtl" style={{ position: "absolute", left: 0, right: 0, top: 400, display: "flex", justifyContent: "center", gap: 190 }}>
-            {country.foods.map((f, i) => (
-              <FoodIcon key={f} name={f} draw={iconDraw(i)} size={170} label={label(f, iconDraw(i), 40)} />
-            ))}
-          </div>
-        )}
-
-        <Sentences windows={windows} fontSize={58} />
+        {isItaly && <PhotoGallery from={cardStart} to={D - tr} appear={nameIn} />}
+        <Sequence from={cardStart} layout="none">
+          <MenuCard country={country} exitAt={D - tr - 10 - cardStart} />
+        </Sequence>
       </AbsoluteFill>
-
+      <LowerBand />
+      <Subtitles windows={windows} fontSize={isItaly ? 50 : 54} box={isItaly ? { left: 120, right: 720 } : { left: 140, right: 760 }} />
+      <LightLeak p={interpolate(frame, [D - tr - 8, D + 4], [0, 1], clamp)} seed={`leak${k}`} />
+      <Finish />
       <Voice file={country.voice} from={0} />
-      <Sfx file="sfx/whoosh.mp3" at={D - tr - 4} />
+      <Sfx file="sfx/whoosh.mp3" at={D - tr - 6} />
     </AbsoluteFill>
   );
 };

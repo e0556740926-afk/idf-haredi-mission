@@ -33,6 +33,8 @@ export const BRAND = {
   stampNumber: "22",
   stampRing: "NUR AIRLINES · FLIGHT 22 · NUR AIRLINES · FLIGHT 22 · ",
   placeholderImage: "תמונה",
+  cabin: "FIRST CLASS",
+  menuTitle: "תפריט הטעימות",
 };
 
 export const AUDIO = {
@@ -116,6 +118,8 @@ export type Country = Scene & {
   coords: [number, number];
   /** מוטיב עיצובי: lanterns | photos | neon | mandala | papel | lamps */
   motif: "lanterns" | "photos" | "neon" | "mandala" | "papel" | "lamps";
+  /** דוגמת זהב חרוטה: seigaiha | quatrefoil | lattice | jali | talavera | star */
+  pattern: "seigaiha" | "quatrefoil" | "lattice" | "jali" | "talavera" | "star";
 };
 
 export const HOME_COORDS: [number, number] = [34.8, 32.1];
@@ -129,6 +133,7 @@ export const COUNTRIES: Country[] = [
     foods: ["מוצ׳י", "אדממה", "מאצ׳ה"],
     coords: [139.7, 35.7],
     motif: "lanterns",
+    pattern: "seigaiha",
     sentences: [
       "נתחיל ביפן, עם משהו קטן שמפתיע מבפנים.",
       "וזה מה שאני אוהב בלהכיר אותך: שגם כשנדמה לי שאני כבר מכיר, יש עוד משהו לגלות.",
@@ -143,6 +148,7 @@ export const COUNTRIES: Country[] = [
     foods: ["בוראטה", "פרמזן בדבש", "אמרטי"],
     coords: [12.5, 41.9],
     motif: "photos",
+    pattern: "quatrefoil",
     sentences: [
       "באיטליה הייתי רוצה לשבת איתך שעות.",
       "להזמין עוד משהו קטן, לדבר, לשכוח מה השעה.",
@@ -158,6 +164,7 @@ export const COUNTRIES: Country[] = [
     foods: ["קימצ׳י", "אצות", "גוצ׳וג׳אנג"],
     coords: [127, 37.5],
     motif: "neon",
+    pattern: "lattice",
     sentences: [
       "בקוריאה יש קצת חריף וקצת מתוק.",
       "כי עם כל הרומנטיקה, אני מאחל לנו גם לדעת לעבור את הרגעים שפחות מתוקים.",
@@ -173,6 +180,7 @@ export const COUNTRIES: Country[] = [
     foods: ["פפאדם", "סמוסה", "לאסי מנגו"],
     coords: [77.2, 28.6],
     motif: "mandala",
+    pattern: "jali",
     sentences: [
       "הודו היא בשביל הסקרנות שלך.",
       "בשביל הרצון לטעום ולנסות, וההתלהבות כשמגיע לשולחן משהו שעוד לא הכרת.",
@@ -187,6 +195,7 @@ export const COUNTRIES: Country[] = [
     foods: ["אלוטה", "סלסה ורדה", "שוקולד צ׳ילי"],
     coords: [-99.1, 19.4],
     motif: "papel",
+    pattern: "talavera",
     sentences: [
       "במקסיקו נעצור בשביל הכיף.",
       "לאכול עם הידיים, לצחוק עם פה מלא, להזמין משהו חריף מדי ולהתחרט ביחד.",
@@ -202,6 +211,7 @@ export const COUNTRIES: Country[] = [
     foods: ["שוקולד דובאי", "חלומי בדבש", "לוקום"],
     coords: [42, 32],
     motif: "lamps",
+    pattern: "star",
     sentences: [
       "ולסיום, משהו מתוק ומפנק.",
       "כי היום רציתי שתשבי, תיהני, ותדעי שכל זה הוכן במחשבה עלייך.",

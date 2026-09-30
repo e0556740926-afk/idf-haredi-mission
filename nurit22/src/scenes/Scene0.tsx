@@ -1,14 +1,15 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
-import { BRAND, COLORS, COUNTRIES, FONTS, HOME_COORDS, HOOK, INTRO, TITLE, VIDEO } from "../config";
+import { BRAND, COLORS, FONTS, HOME_COORDS, HOOK, INTRO, TITLE, VIDEO } from "../config";
+import { EASE_IN_OUT, EASE_OUT, GoldRule, MaskWords } from "../components/Foil";
+import { Finish, LightLeak, LowerBand, NightSky } from "../components/Fx";
 import { GoldDust } from "../components/GoldDust";
 import { Burst, Passport, PAGE_H, PAGE_W, StampFace, homeOnSpread } from "../components/Passport";
 import { Plane } from "../components/Plane";
-import { Sentences } from "../components/Sentences";
 import { Sfx, Voice } from "../components/Sound";
-import { Words } from "../components/Words";
-import { WorldMap } from "../components/WorldMap";
-import { MAP_H, MAP_W, project, quadAt, routePath } from "../lib/map";
+import { Subtitles } from "../components/Subtitles";
+import { Globe } from "../three/Globe";
+import { legShot, shotLerp, toVec, type Shot } from "../three/geo";
 import { sec, sentenceWindows } from "../lib/timing";
 
 export type Scene0Props = { voiceSec: number };
@@ -18,12 +19,6 @@ export const scene0Frames = (voiceSec: number) => sec(HOOK.totalSec) + sec(voice
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const between = (f: number, [a, b]: number[], ease = Easing.inOut(Easing.cubic)) =>
   interpolate(f, [sec(a), sec(b)], [0, 1], { ...clamp, easing: ease });
-
-// Full-screen map layout
-const MAP_SCREEN_W = 2300;
-const K = MAP_SCREEN_W / MAP_W;
-const MAP_LEFT = (1920 - MAP_SCREEN_W) / 2;
-const MAP_TOP = (1080 - MAP_H * K) / 2;
 
 const Hook: React.FC = () => {
   const frame = useCurrentFrame();
@@ -78,10 +73,8 @@ const Hook: React.FC = () => {
         <AbsoluteFill style={{ perspective: 1600, alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "relative", width: PAGE_W * 2, height: PAGE_H, transformStyle: "preserve-3d",
             transform: `translateY(${ty}px) rotateX(${tiltX}deg) rotateZ(${rotZ}deg) scale(${sc})`, opacity: inP > 0 ? 1 : 0 }}>
-            <Passport open={open} mapDraw={between(frame, HOOK.mapDraw, Easing.inOut(Easing.quad))} stampMark={stampMark}>
-              <circle cx={project(HOME_COORDS)[0]} cy={project(HOME_COORDS)[1]} r={10} fill={COLORS.goldLight}
-                opacity={planeShow * (0.6 + 0.4 * Math.sin(frame / 4))} />
-            </Passport>
+            <Passport open={open} mapDraw={between(frame, HOOK.mapDraw, Easing.inOut(Easing.quad))} stampMark={stampMark}
+              sheen={interpolate(frame, [sec(HOOK.passportIn[1]) - 10, sec(HOOK.passportIn[1]) + 30], [0, 1], clamp)} pulse={(frame % 40) / 40} />
             {/* plane lifting off the page */}
             <div style={{ position: "absolute", left: px, top: py, opacity: planeShow,
               transform: `translate(-50%, -50%) translateZ(${pz + 4}px) rotate(${-110 + take * 20}deg) scale(${0.7 + take * 1.2})` }}>
@@ -106,64 +99,48 @@ const Hook: React.FC = () => {
   );
 };
 
-const MapStage: React.FC<{ hookF: number; voiceF: number; total: number }> = ({ hookF, voiceF, total }) => {
+const GlobeStage: React.FC<{ hookF: number; voiceF: number; total: number }> = ({ hookF, voiceF, total }) => {
   const frame = useCurrentFrame();
-  const appear = interpolate(frame, [sec(HOOK.cameraDive[1]) - 12, sec(HOOK.cameraDive[1]) + 10], [0, 1], { ...clamp, easing: Easing.out(Easing.quad) });
+  const t0 = sec(HOOK.cameraDive[1]) - 14;
+  const appear = interpolate(frame, [t0, t0 + 18], [0, 1], { ...clamp, easing: Easing.out(Easing.quad) });
   if (appear <= 0) return null;
-  const zoomIn = interpolate(appear, [0, 1], [1.8, 1]);
-  const drift = interpolate(frame, [0, total], [1, 1.06]);
+  const tr = sec(VIDEO.transitionSec);
+  const approach = interpolate(frame, [t0, hookF + 20], [0, 1], { ...clamp, easing: EASE_OUT });
+  const far: Shot = { focus: toVec(HOME_COORDS), dist: 10, tilt: 0, sx: 0, sy: 0, roll: -0.25 };
+  const near: Shot = { focus: toVec(HOME_COORDS), dist: 3.3, tilt: 0.12, sx: 0, sy: -0.46, roll: 0 };
+  const talk = shotLerp(far, near, approach);
+  const orbit = interpolate(frame, [hookF, total], [0, 1], clamp);
+  talk.focus = toVec([HOME_COORDS[0] + orbit * 14, HOME_COORDS[1] - orbit * 4]);
+  const exit = interpolate(frame, [total - tr - 6, total], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
+  const exitCam = interpolate(frame, [total - tr - 6, total], [0, 1], { ...clamp, easing: EASE_IN_OUT });
+  const shot = exit > 0 ? shotLerp(talk, legShot(0), exitCam) : talk;
+  const reveal = interpolate(frame, [t0, t0 + 70], [0, 1], clamp);
 
   const titleF = sec(HOOK.titleIn);
-  const toTop = interpolate(frame, [hookF - 6, hookF + 22], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
-  const titleGlow = 0.6 + 0.4 * Math.sin(frame / 18);
-
-  // route to the first destination, drawn during the voice; the plane flies it in the transition
-  const route = routePath(HOME_COORDS, COUNTRIES[0].coords);
-  const routeDraw = interpolate(frame, [hookF + 20, hookF + voiceF * 0.6], [0, 1], { ...clamp, easing: Easing.inOut(Easing.quad) });
-  const fly = interpolate(frame, [total - sec(VIDEO.transitionSec) - 4, total], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
-  const pt = quadAt(route.p0, route.c, route.p1, fly * 0.55);
-  const endFade = interpolate(frame, [total - 14, total], [1, 0], clamp);
+  const toTop = interpolate(frame, [hookF - 6, hookF + 26], [0, 1], { ...clamp, easing: EASE_IN_OUT });
+  const titleOut = interpolate(frame, [total - tr - 6, total - tr + 10], [1, 0], clamp);
+  const brand = interpolate(frame, [titleF + 26, titleF + 50], [0, 1], { ...clamp, easing: EASE_OUT });
 
   return (
-    <AbsoluteFill style={{ opacity: appear * endFade, background: `radial-gradient(ellipse at 50% 45%, ${COLORS.blue}, ${COLORS.night} 70%)` }}>
-      <AbsoluteFill style={{ transform: `scale(${zoomIn * drift})` }}>
-        <div style={{ position: "absolute", left: MAP_LEFT, top: MAP_TOP, width: MAP_SCREEN_W, opacity: 0.5 }}>
-          <WorldMap draw={1} strokeScale={1}>
-            <path d={route.d} fill="none" stroke={COLORS.goldLight} strokeWidth={3} strokeDasharray="10 12"
-              opacity={0.9} mask="url(#routeMask)" />
-            <defs>
-              <mask id="routeMask" maskUnits="userSpaceOnUse">
-                <path d={route.d} fill="none" stroke="#fff" strokeWidth={12} pathLength={1} strokeDasharray="1 1" strokeDashoffset={1 - routeDraw} />
-              </mask>
-            </defs>
-            <circle cx={route.p0[0]} cy={route.p0[1]} r={9 + 3 * Math.sin(frame / 6)} fill={COLORS.goldLight} />
-            <circle cx={route.p0[0]} cy={route.p0[1]} r={18 + ((frame % 45) / 45) * 40} fill="none" stroke={COLORS.gold}
-              strokeWidth={2} opacity={1 - (frame % 45) / 45} />
-          </WorldMap>
-        </div>
-        {/* plane sitting at home, then taking off along the route */}
-        <div style={{ position: "absolute", left: MAP_LEFT + pt.x * K, top: MAP_TOP + pt.y * K,
-          transform: `translate(-50%, -50%) rotate(${fly > 0 ? pt.angle : -60}deg) scale(${1 + fly * 0.6})` }}>
-          <Plane size={70} glow={1.3} />
-        </div>
-      </AbsoluteFill>
-      <GoldDust count={70} seed="map" />
-
-      {/* title */}
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center",
-        transform: `translateY(${-330 * toTop}px) scale(${1 - 0.5 * toTop})` }}>
-        <Words text={TITLE} start={titleF} stagger={6} dur={22}
-          style={{ fontFamily: FONTS.title, fontSize: 170, lineHeight: 1.1, color: COLORS.goldLight }}
-          wordStyle={{ textShadow: `0 0 ${30 * titleGlow}px rgba(224,184,98,0.7), 0 0 90px rgba(224,184,98,0.35)` }} />
-        <div style={{ fontFamily: FONTS.body, fontWeight: 500, fontSize: 30, letterSpacing: 6, color: COLORS.gold, marginTop: 28,
-          opacity: interpolate(frame, [titleF + 20, titleF + 40], [0, 1], clamp) * (1 - toTop) }} dir="rtl">
+    <AbsoluteFill style={{ opacity: appear }}>
+      <NightSky y={60} />
+      <Globe shot={shot} legs={exit > 0 ? [{ index: 0, draw: exit * 0.5 }] : []} stops={[0]} pulseStop={0}
+        plane={exit > 0 ? { leg: 0, t: exit * 0.5 } : null} reveal={reveal} revealFrom={0} />
+      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", opacity: titleOut,
+        transform: `translateY(${-160 - 250 * toTop}px) scale(${1 - 0.45 * toTop})` }}>
+        <MaskWords text={TITLE} start={titleF} stagger={6} dur={30} foil glow={1.4}
+          style={{ fontFamily: FONTS.title, fontSize: 168, lineHeight: 1.1 }} />
+        <div style={{ marginTop: 26, opacity: brand * (1 - toTop) }}><GoldRule p={brand} width={520} /></div>
+        <div dir="rtl" style={{ marginTop: 18, fontFamily: FONTS.body, fontWeight: 300, fontSize: 30, color: COLORS.goldLight,
+          opacity: brand * (1 - toTop), transform: `translateY(${(1 - brand) * 14}px)` }}>
           {`${BRAND.airline} · ${BRAND.flight} · ${BRAND.tagline}`}
         </div>
       </AbsoluteFill>
-
+      <LowerBand opacity={toTop} />
       <Sequence from={hookF} layout="none">
-        <Sentences windows={sentenceWindows(INTRO.sentences, voiceF)} />
+        <Subtitles windows={sentenceWindows(INTRO.sentences, voiceF)} />
       </Sequence>
+      <LightLeak p={interpolate(frame, [total - tr - 8, total + 4], [0, 1], clamp)} seed="leak0" />
     </AbsoluteFill>
   );
 };
@@ -174,13 +151,14 @@ export const Scene0: React.FC<Scene0Props> = ({ voiceSec }) => {
   const voiceF = sec(voiceSec);
   return (
     <AbsoluteFill style={{ background: "#000" }}>
-      <MapStage hookF={hookF} voiceF={voiceF} total={durationInFrames} />
+      <GlobeStage hookF={hookF} voiceF={voiceF} total={durationInFrames} />
       <Hook />
       <Sfx file="sfx/chime.mp3" at={sec(HOOK.spotlightOn)} />
       <Sfx file="sfx/stamp.mp3" at={sec(HOOK.stampImpact) - 1} />
       <Sfx file="sfx/whoosh.mp3" at={sec(HOOK.takeoff)} />
       <Sfx file="sfx/whoosh.mp3" at={durationInFrames - sec(VIDEO.transitionSec) - 4} />
       <Voice file={INTRO.voice} from={hookF} />
+      <Finish />
     </AbsoluteFill>
   );
 };

@@ -1,9 +1,8 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, random } from "remotion";
 import { BRAND, COLORS, FONTS } from "../config";
-import { project } from "../lib/map";
-import { HOME_COORDS } from "../config";
-import { WorldMap } from "./WorldMap";
+import { DotMap, dotMapHome } from "./DotMap";
+import { foilStyle } from "./Foil";
 import { FramedImage } from "./Placeholder";
 import { assetSrc, hasAsset } from "../lib/assets";
 
@@ -69,8 +68,8 @@ export const Burst: React.FC<{ t: number; x: number; y: number; count?: number; 
 
 /** The passport. `open` 0→1 flips the cover (RTL: hinge on the right), `mapDraw` draws the map on the spread,
  *  `stampMark` 0→1 shows the ink mark on the cover. */
-export const Passport: React.FC<{ open: number; mapDraw: number; stampMark: number; children?: React.ReactNode }> = ({
-  open, mapDraw, stampMark, children,
+export const Passport: React.FC<{ open: number; mapDraw: number; stampMark: number; sheen?: number; pulse?: number }> = ({
+  open, mapDraw, stampMark, sheen = 0, pulse = 0,
 }) => {
   const coverAngle = interpolate(open, [0, 1], [0, 180], { easing: Easing.inOut(Easing.cubic) });
   const shift = interpolate(open, [0, 1], [PAGE_W / 2, 0], { easing: Easing.inOut(Easing.cubic) });
@@ -100,7 +99,7 @@ export const Passport: React.FC<{ open: number; mapDraw: number; stampMark: numb
       </div>
       {/* map across the spread */}
       <div style={{ position: "absolute", left: 20, right: 20, top: 120, opacity: spreadVisible, transform: "translateZ(1px)" }}>
-        <WorldMap draw={mapDraw} strokeScale={2.2}>{children}</WorldMap>
+        <DotMap width={PAGE_W * 2 - 40} reveal={mapDraw} pulse={pulse} />
       </div>
 
       {/* cover */}
@@ -111,20 +110,27 @@ export const Passport: React.FC<{ open: number; mapDraw: number; stampMark: numb
           background: `linear-gradient(145deg, ${COLORS.blue}, ${COLORS.night})`,
           boxShadow: `0 30px 80px rgba(0,0,0,0.6), inset 0 0 0 2px ${COLORS.gold}, inset 0 0 0 10px ${COLORS.blue}, inset 0 0 0 11px rgba(224,184,98,0.6)` }}>
           <Guilloche opacity={0.08} />
+          <Leather />
           <AbsoluteFill style={{ alignItems: "center", paddingTop: 70 }}>
-            <div style={{ fontFamily: FONTS.body, fontWeight: 500, fontSize: 30, letterSpacing: 10, color: COLORS.gold }}>
+            <div style={{ fontFamily: FONTS.title, fontSize: 34, ...foilStyle(sheen, 0.4) }}>
               {BRAND.passportLabel}
             </div>
             <svg width={150} height={150} viewBox="-60 -60 120 120" style={{ marginTop: 50 }}>
-              <g fill="none" stroke={COLORS.gold} strokeWidth={2}>
+              <defs>
+                <linearGradient id="emblemG" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stopColor={COLORS.goldLight} />
+                  <stop offset={Math.max(0.01, sheen)} stopColor={COLORS.cream} />
+                  <stop offset="1" stopColor={COLORS.gold} />
+                </linearGradient>
+              </defs>
+              <g fill="none" stroke="url(#emblemG)" strokeWidth={2.2}>
                 <circle r={52} />
                 <ellipse rx={22} ry={52} />
                 <ellipse rx={42} ry={52} />
                 <path d="M-52,0H52M-46,-24H46M-46,24H46" />
               </g>
             </svg>
-            <div style={{ marginTop: 50, fontFamily: FONTS.title, fontSize: 64, color: COLORS.goldLight, letterSpacing: 4,
-              textShadow: `0 0 18px rgba(224,184,98,0.55)` }}>
+            <div style={{ marginTop: 50, fontFamily: FONTS.title, fontSize: 66, letterSpacing: 4, ...foilStyle(sheen, 0.8) }}>
               {BRAND.passportName}
             </div>
             <div style={{ marginTop: 14, fontFamily: FONTS.body, fontSize: 20, letterSpacing: 8, color: COLORS.gold }}>
@@ -150,8 +156,17 @@ export const Passport: React.FC<{ open: number; mapDraw: number; stampMark: numb
 
 /** Home point on the passport map, in page-spread pixels (for launching the plane). */
 export const homeOnSpread = () => {
-  const [mx, my] = project(HOME_COORDS);
-  const mapPx = PAGE_W * 2 - 40;
-  const k = mapPx / 2000;
-  return { x: 20 + mx * k, y: 120 + my * k };
+  const h = dotMapHome(PAGE_W * 2 - 40);
+  return { x: 20 + h.x, y: 120 + h.y };
 };
+
+/** Fine leather grain for the cover. */
+const Leather: React.FC = () => (
+  <svg width={PAGE_W} height={PAGE_H} style={{ position: "absolute", inset: 0, opacity: 0.5, mixBlendMode: "multiply" }}>
+    <filter id="leather">
+      <feTurbulence type="fractalNoise" baseFrequency={0.75} numOctaves={3} seed={7} />
+      <feColorMatrix type="matrix" values="0 0 0 0 0.03  0 0 0 0 0.08  0 0 0 0 0.18  0 0 0 -1.6 1.25" />
+    </filter>
+    <rect width="100%" height="100%" filter="url(#leather)" />
+  </svg>
+);

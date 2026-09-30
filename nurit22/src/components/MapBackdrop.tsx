@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { COLORS } from "../config";
 import { K, leg, STOPS, toScreen, viewBoxFor, type Cam } from "../lib/camera";
-import { GRATICULE, LAND_PATHS, project } from "../lib/map";
+import { GRATICULE, LAND_PATHS, MAP_H, MAP_W, project } from "../lib/map";
 import { Plane } from "./Plane";
 
 export type LegDraw = { index: number; draw: number };
@@ -39,7 +39,7 @@ export const MapBackdrop: React.FC<{
           return (
             <g key={index}>
               <defs>
-                <mask id={`leg${index}`} maskUnits="userSpaceOnUse">
+                <mask id={`leg${index}`} maskUnits="userSpaceOnUse" x={-500} y={-500} width={MAP_W + 1000} height={MAP_H + 1000}>
                   <path d={r.d} fill="none" stroke="#fff" strokeWidth={14 * px} pathLength={1} strokeDasharray="1 1" strokeDashoffset={1 - draw} />
                 </mask>
               </defs>

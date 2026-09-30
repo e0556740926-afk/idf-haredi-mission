@@ -4,6 +4,8 @@ import { BRAND, COLORS, FONTS } from "../config";
 import { project } from "../lib/map";
 import { HOME_COORDS } from "../config";
 import { WorldMap } from "./WorldMap";
+import { FramedImage } from "./Placeholder";
+import { assetSrc, hasAsset } from "../lib/assets";
 
 export const PAGE_W = 440;
 export const PAGE_H = 600;
@@ -87,6 +89,15 @@ export const Passport: React.FC<{ open: number; mapDraw: number; stampMark: numb
       <div style={{ ...page, left: PAGE_W, opacity: spreadVisible, borderRadius: "0 14px 14px 0" }}><Guilloche /></div>
       <div style={{ position: "absolute", left: PAGE_W - 1, top: 0, width: 2, height: PAGE_H, opacity: spreadVisible,
         background: `linear-gradient(${COLORS.night}, ${COLORS.gold}, ${COLORS.night})` }} />
+      {/* passport photo on the data page */}
+      <div style={{ position: "absolute", left: 34, top: PAGE_H - 150, opacity: spreadVisible, display: "flex", gap: 22, alignItems: "center", transform: "translateZ(1px)" }}>
+        <FramedImage src={hasAsset("face.png") ? assetSrc("face.png") : null} width={100} height={124} style={{ padding: 4, borderWidth: 2 }} />
+        <div style={{ fontFamily: FONTS.body, color: COLORS.gold, fontSize: 15, letterSpacing: 3, lineHeight: 1.7 }}>
+          <div style={{ fontFamily: FONTS.title, fontSize: 30, color: COLORS.goldLight, letterSpacing: 2 }}>{BRAND.passportName}</div>
+          <div>{BRAND.airline.toUpperCase()}</div>
+          <div dir="rtl">{BRAND.flight}</div>
+        </div>
+      </div>
       {/* map across the spread */}
       <div style={{ position: "absolute", left: 20, right: 20, top: 120, opacity: spreadVisible, transform: "translateZ(1px)" }}>
         <WorldMap draw={mapDraw} strokeScale={2.2}>{children}</WorldMap>

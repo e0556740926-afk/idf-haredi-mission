@@ -23,7 +23,7 @@ export const Words: React.FC<{
         });
         return (
           <span key={i} style={{ display: "inline-block", opacity: p, transform: `translateY(${(1 - p) * 0.45}em)`,
-            filter: `blur(${(1 - p) * 8}px)`, ...wordStyle }}>
+            filter: p < 1 ? `blur(${(1 - p) * 8}px)` : "none", ...wordStyle }}>
             {w}
           </span>
         );

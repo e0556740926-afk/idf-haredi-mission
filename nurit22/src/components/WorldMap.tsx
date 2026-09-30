@@ -3,10 +3,10 @@ import { COLORS } from "../config";
 import { GRATICULE, LAND_PATHS, MAP_H, MAP_W } from "../lib/map";
 
 /** Gold line world map. `draw` 0→1 animates the outlines drawing themselves. */
-export const WorldMap: React.FC<{ draw?: number; width?: number | string; strokeScale?: number; children?: React.ReactNode; style?: React.CSSProperties }> = ({
-  draw = 1, width = "100%", strokeScale = 1, children, style,
+export const WorldMap: React.FC<{ draw?: number; width?: number | string; height?: number; viewBox?: string; strokeScale?: number; children?: React.ReactNode; style?: React.CSSProperties }> = ({
+  draw = 1, width = "100%", height, viewBox, strokeScale = 1, children, style,
 }) => (
-  <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} width={width} style={{ overflow: "visible", display: "block", ...style }}>
+  <svg viewBox={viewBox ?? `0 0 ${MAP_W} ${MAP_H}`} width={width} height={height} style={{ overflow: "visible", display: "block", ...style }}>
     <defs>
       <filter id="mapGlow" x="-10%" y="-10%" width="120%" height="120%">
         <feGaussianBlur stdDeviation={3 * strokeScale} result="b" />

@@ -61,6 +61,33 @@ export const HOOK = {
   titleIn: 7.0,
 };
 
+/** ציר הזמן של סצנות המדינות (שניות מתחילת הסצנה) */
+export const COUNTRY_TIMING = {
+  /** המטוס משלים את הטיסה ונוחת */
+  landing: [0, 1.4],
+  /** זום פנימה אל המדינה */
+  zoomIn: [1.0, 2.4],
+  nameIn: 1.8,
+  motifIn: 2.0,
+  /** אייקוני המאכלים: התחלה, משך שרטוט, מרווח בין אייקונים */
+  iconsIn: 2.2,
+  iconDraw: 1.3,
+  iconStagger: 0.5,
+  /** המשפט הראשון לא יופיע לפני */
+  firstTextAt: 1.2,
+  /** זום על המדינה */
+  zoom: 3.2,
+};
+
+/** ציר הזמן של סצנת הסיום (שניות) */
+export const FINALE_TIMING = {
+  routes: 4,
+  table: 4.5,
+  logo: 4.5,
+  endLine: 4,
+  black: 1,
+};
+
 export const TITLE = "לטעום את העולם איתך";
 
 export type Scene = {
@@ -87,6 +114,8 @@ export type Country = Scene & {
   foods: [string, string, string];
   /** [longitude, latitude] */
   coords: [number, number];
+  /** מוטיב עיצובי: lanterns | photos | neon | mandala | papel | lamps */
+  motif: "lanterns" | "photos" | "neon" | "mandala" | "papel" | "lamps";
 };
 
 export const HOME_COORDS: [number, number] = [34.8, 32.1];
@@ -99,6 +128,7 @@ export const COUNTRIES: Country[] = [
     gate: "שער 1",
     foods: ["מוצ׳י", "אדממה", "מאצ׳ה"],
     coords: [139.7, 35.7],
+    motif: "lanterns",
     sentences: [
       "נתחיל ביפן, עם משהו קטן שמפתיע מבפנים.",
       "וזה מה שאני אוהב בלהכיר אותך: שגם כשנדמה לי שאני כבר מכיר, יש עוד משהו לגלות.",
@@ -112,6 +142,7 @@ export const COUNTRIES: Country[] = [
     gate: "שער 2",
     foods: ["בוראטה", "פרמזן בדבש", "אמרטי"],
     coords: [12.5, 41.9],
+    motif: "photos",
     sentences: [
       "באיטליה הייתי רוצה לשבת איתך שעות.",
       "להזמין עוד משהו קטן, לדבר, לשכוח מה השעה.",
@@ -126,6 +157,7 @@ export const COUNTRIES: Country[] = [
     gate: "שער 3",
     foods: ["קימצ׳י", "אצות", "גוצ׳וג׳אנג"],
     coords: [127, 37.5],
+    motif: "neon",
     sentences: [
       "בקוריאה יש קצת חריף וקצת מתוק.",
       "כי עם כל הרומנטיקה, אני מאחל לנו גם לדעת לעבור את הרגעים שפחות מתוקים.",
@@ -140,6 +172,7 @@ export const COUNTRIES: Country[] = [
     gate: "שער 4",
     foods: ["פפאדם", "סמוסה", "לאסי מנגו"],
     coords: [77.2, 28.6],
+    motif: "mandala",
     sentences: [
       "הודו היא בשביל הסקרנות שלך.",
       "בשביל הרצון לטעום ולנסות, וההתלהבות כשמגיע לשולחן משהו שעוד לא הכרת.",
@@ -153,6 +186,7 @@ export const COUNTRIES: Country[] = [
     gate: "שער 5",
     foods: ["אלוטה", "סלסה ורדה", "שוקולד צ׳ילי"],
     coords: [-99.1, 19.4],
+    motif: "papel",
     sentences: [
       "במקסיקו נעצור בשביל הכיף.",
       "לאכול עם הידיים, לצחוק עם פה מלא, להזמין משהו חריף מדי ולהתחרט ביחד.",
@@ -167,6 +201,7 @@ export const COUNTRIES: Country[] = [
     gate: "שער 6",
     foods: ["שוקולד דובאי", "חלומי בדבש", "לוקום"],
     coords: [42, 32],
+    motif: "lamps",
     sentences: [
       "ולסיום, משהו מתוק ומפנק.",
       "כי היום רציתי שתשבי, תיהני, ותדעי שכל זה הוכן במחשבה עלייך.",

@@ -1,0 +1,24 @@
+{
+  "name": "nurit22",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "preview": "node scripts/prepare-assets.mjs && node scripts/preview.mjs",
+    "render": "node scripts/prepare-assets.mjs && node scripts/render-final.mjs"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.531",
+    "@remotion/cli": "^4.0.531",
+    "@remotion/google-fonts": "^4.0.531",
+    "@remotion/media-utils": "^4.0.531",
+    "@remotion/renderer": "^4.0.531",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.531"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}
